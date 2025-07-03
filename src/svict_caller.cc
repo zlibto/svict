@@ -1390,6 +1390,10 @@ if(sub_count > max_sub)max_sub = sub_count;
 
 					for(auto& interval : valid_intervals){
 						for(x = ((interval.con_loc+k)-interval.len); x < (interval.con_loc+k); x++){
+							///ZL
+						    // interval.con_log + k - interval.len: interval start on contig; >=0
+							// interval.con_loc + k :  interval end on contig; <=contig length
+							// No idea why 
 							if(mapped[x] < REPEAT_LIMIT){
 								for(y = ((interval.con_loc+k)-interval.len); y < (interval.con_loc+k); y++){
 									mapped[y]++;
@@ -1635,7 +1639,7 @@ if(PRINT_STATS)num_intervals = 0;
 
 					intervals[loc].push_back(interval);
 					id++;
-if(j == CON_NUM_DEBUG)print_interval("Included", interval);
+					if(j == CON_NUM_DEBUG)print_interval("Included", interval);
 					break;
 				}
 			}
@@ -1654,9 +1658,10 @@ if(j == CON_NUM_DEBUG)print_interval("Included", interval);
 			}
 		}
 
-		interval_count++;
-num_intervals += interval_count;
+		interval_count++; // # nodes
+		num_intervals += interval_count;
 
+		// ZL: graph building starts here
 		// Initialization
 		int** contig_graph = new int*[interval_count]; //think of a better solution
 
@@ -1706,7 +1711,7 @@ num_intervals += interval_count;
 									visited[u] = true;
 									found = true;
 									contig_graph[interval1.id][interval2.id] = -(interval2.len-interval2.error);
-normal_edges++;
+									normal_edges++;
 								}
 							}
 						}
@@ -1715,20 +1720,20 @@ normal_edges++;
 					//to sink
 					if(!found && ( ((interval1.con_loc+k-interval1.len) <= BUILD_DIST) || ((contig_len - (interval1.con_loc+k)) <= BUILD_DIST) || interval1.id == (id-1)) ){ 
 						contig_graph[interval1.id][id] = -(interval1.len-interval1.error);
-sink_edges++;
+						sink_edges++;
 					}
 					
 
 					//from source
 					if(!visited[i] && ( ((interval1.con_loc+k-interval1.len) <= BUILD_DIST) || ((contig_len - (interval1.con_loc+k)) <= BUILD_DIST)  || interval1.id == 1) ){ 
 						contig_graph[0][interval1.id] = -(interval1.len-interval1.error);
-source_edges++;
+						source_edges++;
 					}
 				}
 			}
 		}
 
-cur_debug_id = j;
+		cur_debug_id = j;
 
 		// Run Ford Fulkerson for max flow
 		//====================================
@@ -1741,7 +1746,7 @@ cur_debug_id = j;
 		//====================================
 
 		if(!paths.empty()){
-cons_with_paths++;
+			cons_with_paths++;
 			int max_paths = PATH_LIMIT;
 			int short_dist = paths[0].second;
 
@@ -1750,19 +1755,20 @@ cons_with_paths++;
 
 				vector<int>& path = paths[p].first;
 
-if(j == CON_NUM_DEBUG){
+				if(j == CON_NUM_DEBUG){
 
-	cerr << "All examined paths:" << endl;
+					cerr << "All examined paths:" << endl;
 
-	for(int i = path.size()-2; i > 0; i--){
-		cerr << intervals[lookup[path[i]].first][lookup[path[i]].second].loc << "-" << intervals[lookup[path[i]].first][lookup[path[i]].second].loc + intervals[lookup[path[i]].first][lookup[path[i]].second].len << "\t";
-	}
-	cerr << endl;
-	for(int i = path.size()-2; i > 0; i--){
-		cerr << intervals[lookup[path[i]].first][lookup[path[i]].second].con_loc+k - intervals[lookup[path[i]].first][lookup[path[i]].second].len << "-" << intervals[lookup[path[i]].first][lookup[path[i]].second].con_loc+k << "\t";
-	}
-	cerr << "\n========================================================" << endl;
-}
+					for(int i = path.size()-2; i > 0; i--){
+						cerr << intervals[lookup[path[i]].first][lookup[path[i]].second].loc << "-" << intervals[lookup[path[i]].first][lookup[path[i]].second].loc + intervals[lookup[path[i]].first][lookup[path[i]].second].len << "\t";
+					}
+					cerr << endl;
+					for(int i = path.size()-2; i > 0; i--){
+						cerr << intervals[lookup[path[i]].first][lookup[path[i]].second].con_loc+k - intervals[lookup[path[i]].first][lookup[path[i]].second].len << "-" << intervals[lookup[path[i]].first][lookup[path[i]].second].con_loc+k << "\t";
+					}
+					cerr << "\n========================================================" << endl;
+				}
+
 				mapping_ext cur_i, i1, i2, i3, i4;
 				int chromo_dist, contig_dist;
 				int a1 = -1;
@@ -1797,7 +1803,7 @@ if(j == CON_NUM_DEBUG){
 				 				contig_dist = (i2.con_loc-i2.len)-i1.con_loc;
 
 								if(abs(chromo_dist) <= uncertainty || abs(contig_dist) <= uncertainty){ 
-intc1++;
+									intc1++;
 									i1.id = all_intervals.size();
 									all_intervals.push_back(i1);
 									i2.id = all_intervals.size();
@@ -1816,7 +1822,7 @@ intc1++;
 								if(i1.con_loc+k-i1.len > ((int)contig_len - (i1.con_loc+k)) || a1 != 1){
 									//Insertion, Left Side
 									if(i1.con_loc+k-i1.len > ANCHOR_SIZE && !i1.rc){
-				intc2++;	
+										intc2++;	
 										i1.id = all_intervals.size();
 										all_intervals.push_back(i1);
 										sorted_intervals[i1.chr].push_back({i1.id,i1.loc});
@@ -1827,7 +1833,7 @@ intc1++;
 								else{
 									//Insertion, Right Side, singleton case
 									if(((int)contig_len - (i1.con_loc+k)) > ANCHOR_SIZE && !i1.rc){
-				intc3++;
+										intc3++;
 										i1.id = all_intervals.size();
 										all_intervals.push_back(i1);
 										sorted_intervals[i1.chr].push_back({i1.id,i1.loc});
@@ -1838,7 +1844,7 @@ intc1++;
 							}
 						}
 						else{
-anchor_fails++;
+						anchor_fails++;
 						}
 					}
 					// If second anchor not set
@@ -1883,7 +1889,7 @@ anchor_fails++;
 										i2.id = all_intervals.size();
 										all_intervals.push_back(i2);
 									//	results_full.push_back({{i2.id, -1, -1, i1.id}, INV});
-short_inv1++;
+									short_inv1++;
 									}
 					 			}
 					 			//Positive Strand
@@ -1897,7 +1903,7 @@ short_inv1++;
 										all_intervals.push_back(i2);
 									//	results_full.push_back({{i2.id, i1.id, -1, -1}, DUP});
 									//	results_full.push_back({{ -1, -1, i2.id, i1.id}, DUP});
-short_dup2++;
+										short_dup2++;
 						 			}
 						 			else{
 						 				//INS
@@ -1908,10 +1914,10 @@ short_dup2++;
 											i2.id = all_intervals.size();
 											all_intervals.push_back(i2);
 										//	results_full.push_back({{i1.id, -1, -1, i2.id}, INS});
-short_ins2++;
+											short_ins2++;
 										}//DEL
 										else if(chromo_dist > uncertainty && abs(contig_dist) <= uncertainty){
-intc4++;
+											intc4++;
 											i1.id = all_intervals.size();
 											all_intervals.push_back(i1);
 											i2.id = all_intervals.size();
@@ -1929,7 +1935,7 @@ intc4++;
 											i2.id = all_intervals.size();
 											all_intervals.push_back(i2);
 										//	results_full.push_back({{i1.id, -1, -1, i2.id}, INV});
-short_inv1++;
+											short_inv1++;
 										}//??? Maybe SNPs/errors near breakpoint
 										else if(chromo_dist > uncertainty && contig_dist > uncertainty){
 											if(chromo_dist - abs(contig_dist) >= MIN_SV_LEN_DEFAULT){
@@ -1942,7 +1948,7 @@ short_inv1++;
 											}
 										}
 										else{
-mystery2++;
+											mystery2++;
 										}
 						 			}
 					 			}
@@ -1976,11 +1982,11 @@ mystery2++;
 
 				 					if(i2.rc != i1.rc  && i3.rc != i4.rc){
 				 					//	add_result(j, i1, i2, INV, i2.chr, 0);
-short_inv2++;
+										short_inv2++;
 									}
 									else if(i1.chr != i2.chr && i3.chr != i4.chr){
 										//add_result(i1.con_id, i1, i2, TRANS, i3.chr, add_result(i4.con_id, i3, i4, TRANS, i4.chr, -1));
-short_trans++;
+										short_trans++;
 									}
 								}
 							}
@@ -2001,7 +2007,7 @@ short_trans++;
 				 				contig_dist = (i2.con_loc-i2.len)-i1.con_loc;
 
 								if(abs(chromo_dist) <= uncertainty || abs(contig_dist) <= uncertainty){
-	intc5++;
+									intc5++;
 									i1.id = all_intervals.size();
 									all_intervals.push_back(i1);
 									i2.id = all_intervals.size();
@@ -2027,7 +2033,7 @@ short_trans++;
 			 				contig_dist = (i2.con_loc-i2.len)-i1.con_loc;
 
 							if(abs(chromo_dist) <= uncertainty || abs(contig_dist) <= uncertainty){
-intc5++;
+								intc5++;
 								i1.id = all_intervals.size();
 								all_intervals.push_back(i1);
 								i2.id = all_intervals.size();
@@ -2040,7 +2046,7 @@ intc5++;
 							}
 						}
 						else{
-if(!is_anchor)anchor_fails++;
+							if(!is_anchor)anchor_fails++;
 						}
 
 						// Insertion Right Side, after last anchor interval
@@ -2048,7 +2054,7 @@ if(!is_anchor)anchor_fails++;
 
 							i1 = (a2 == 1) ? intervals[lookup[path[a2]].first][lookup[path[a2]].second] : intervals[lookup[path[a1]].first][lookup[path[a1]].second];
 							if(((int)contig_len - (i1.con_loc+k)) > ANCHOR_SIZE && !i1.rc){
-intc6++;
+								intc6++;
 								i1.id = all_intervals.size();
 								all_intervals.push_back(i1);
 								sorted_intervals[i1.chr].push_back({i1.id,i1.loc});
@@ -2070,30 +2076,30 @@ intc6++;
 		}//empty
 
 
-//Debug graph
-if(j == CON_NUM_DEBUG){
+		//Debug graph
+		if(j == CON_NUM_DEBUG){
 
-	for(int i=0; i <= id; i++){
-		for(int j=0; j <= id; j++){
-			cerr << contig_graph[i][j] << ", ";
-		}
-		cerr << endl;
-	}
+			for(int i=0; i <= id; i++){
+				for(int j=0; j <= id; j++){
+					cerr << contig_graph[i][j] << ", ";
+				}
+				cerr << endl;
+			}
 
-	cerr << "All generated paths:" << endl;
+			cerr << "All generated paths:" << endl;
 
-	for(auto &path_pair: paths){
-		vector<int>& path = path_pair.first;
-		for(int i = path.size()-2; i > 0; i--){
-			cerr << intervals[lookup[path[i]].first][lookup[path[i]].second].loc << "-" << intervals[lookup[path[i]].first][lookup[path[i]].second].loc + intervals[lookup[path[i]].first][lookup[path[i]].second].len << "\t";
+			for(auto &path_pair: paths){
+				vector<int>& path = path_pair.first;
+				for(int i = path.size()-2; i > 0; i--){
+					cerr << intervals[lookup[path[i]].first][lookup[path[i]].second].loc << "-" << intervals[lookup[path[i]].first][lookup[path[i]].second].loc + intervals[lookup[path[i]].first][lookup[path[i]].second].len << "\t";
+				}
+				cerr << endl;
+				for(int i = path.size()-2; i > 0; i--){
+					cerr << intervals[lookup[path[i]].first][lookup[path[i]].second].con_loc+k - intervals[lookup[path[i]].first][lookup[path[i]].second].len << "-" << intervals[lookup[path[i]].first][lookup[path[i]].second].con_loc+k << "\t";
+				}
+				cerr << endl;
+			}
 		}
-		cerr << endl;
-		for(int i = path.size()-2; i > 0; i--){
-			cerr << intervals[lookup[path[i]].first][lookup[path[i]].second].con_loc+k - intervals[lookup[path[i]].first][lookup[path[i]].second].len << "-" << intervals[lookup[path[i]].first][lookup[path[i]].second].con_loc+k << "\t";
-		}
-		cerr << endl;
-	}
-}
 
 		for(int i=0; i < interval_count; i++){
 			delete[] contig_graph[i];
@@ -2162,7 +2168,7 @@ if(j == CON_NUM_DEBUG){
 											add_result(iw.con_id, iw, iw, INS, iz.chr, add_result(iz.con_id, iz, iz, INS, iz.chr, -1));
 										//	results_full.push_back({{w_id, -1, -1, z_id}, INS});
 											found = true;
-long_ins++;
+											long_ins++;
 										}
 									}
 									else if(ip1.id2 != -1 && ip2.id1 != -1){
@@ -2186,7 +2192,7 @@ long_ins++;
 														add_result(iw.con_id, iw, ix, INV, iy.chr, add_result(iz.con_id, iy, iz, INV, iz.chr, -1));
 													//	results_full.push_back({{w_id, ip1.id2, ip2.id1, z_id}, INV});		
 														found = true;												
-long_inv1++;
+														long_inv1++;
 													}
 												}
 												else if(iw.rc && iz.rc){
@@ -2196,7 +2202,7 @@ long_inv1++;
 														add_result(iw.con_id, iw, ix, INV, iy.chr, add_result(iz.con_id, iy, iz, INV, iz.chr, -1));
 													//	results_full.push_back({{w_id, ip1.id2, ip2.id1, z_id}, INV});
 														found = true;
-long_inv3++;
+														long_inv3++;
 													}
 												}
 												
@@ -2213,7 +2219,7 @@ long_inv3++;
 														add_result(iw.con_id, iw, ix, TRANS, iy.chr, add_result(iz.con_id, iy, iz, TRANS, iz.chr, -1));
 													//	results_full.push_back({{w_id, ip1.id2, ip2.id1, z_id}, TRANS});
 														found = true;
-long_trans++;
+														long_trans++;
 													}
 													//else if(ix.loc > iy.loc && (ix.loc+ix.len)-iy.loc < max_length && abs(iw.loc-iy.loc) <= uncertainty && abs(iz.loc-ix.loc) <= uncertainty){
 													else if(ix.loc > iw.loc && iz.loc > iy.loc && abs((iw.loc+iw.len)-ix.loc) < max_length  && abs((iy.loc+iy.len)-iz.loc) < max_length && abs(iw.loc-iy.loc) <= uncertainty && abs(iz.loc-ix.loc) <= uncertainty){
@@ -2221,11 +2227,11 @@ long_trans++;
 														// ip2.first = true;
 														// print_variant(fo_vcf, fr_vcf, fo_full, iw.con_id, iz.con_id, iw, ix, iy, iz, "DEL");
 														// Does not work well
-long_del++;
+														long_del++;
 													}
 													else if(ix.loc < iy.loc && (iy.loc+iy.len)-ix.loc < max_length && abs(iz.loc-(iw.loc+iw.len)) <= uncertainty){
 														// Mostly false positives?
-long_dup++;
+														long_dup++;
 													}
 												}
 											}
@@ -2308,7 +2314,7 @@ long_dup++;
 								// results_full.push_back({{w_id, ip1.id2, -1, -1}, TRANS});
 								// results_full.push_back({{-1, -1, w_id, ip1.id2}, TRANS});
 								ip1.visited = true;
-		one_bp_trans++;
+								one_bp_trans++;
 							}
 							else if(abs(ix.loc - iw.loc) <= max_length && abs(ix.loc - iw.loc) >= min_length){
 								if(iw.rc != ix.rc){
@@ -2319,19 +2325,19 @@ long_dup++;
 									// else{
 									// 	results_full.push_back({{-1, -1, w_id, ip1.id2}, INV});
 									// }
-		one_bp_inv++;
+									one_bp_inv++;
 								}
 								else if(chromo_dist >= min_length){
 									add_result(iw.con_id, iw, ix, DEL, ix.chr, 0);
 									//results_full.push_back({{w_id, -1, -1, ip1.id2}, DEL});
-		one_bp_del++;
+									one_bp_del++;
 								}
 								else if(iw.loc+iw.len-ix.loc >= min_length){
 									//DUP
-		one_bp_dup++;
+									one_bp_dup++;
 								}
 								else{
-		mystery3++;
+									mystery3++;
 								}
 								ip1.visited = true;
 							}
@@ -2346,7 +2352,7 @@ long_dup++;
 						if(ix.len >= contig_len/3 && (ix.con_loc+k-ix.len) > contig_len/4 && !is_low_complexity(contig_seq.substr(0,ix.con_loc+k-ix.len), LOW_COMPLEX_UNMAPPED)){
 							add_result(ix.con_id, ix, ix, INSL, ix.chr, 0);
 							//results_full.push_back({{-1, -1, -1, ip1.id2}, INS});
-		one_bp_ins++;
+							one_bp_ins++;
 						}
 						ip1.visited = true;
 					}
@@ -2359,7 +2365,7 @@ long_dup++;
 						if(iw.len >= contig_len/3 && (contig_len-(iw.con_loc+k)) > contig_len/4 && !is_low_complexity(contig_seq.substr(iw.con_loc+k+1,contig_len-(iw.con_loc+k)), LOW_COMPLEX_UNMAPPED)){
 							add_result(iw.con_id, iw, iw, INSR, iw.chr, 0);
 							//results_full.push_back({{ip1.id1, -1, -1, -1}, INS});
-		one_bp_ins++;
+							one_bp_ins++;
 						}
 						ip1.visited = true;
 					}
@@ -2368,58 +2374,58 @@ long_dup++;
 		}//i
 	}//chr
 
-if(PRINT_STATS){
+	if(PRINT_STATS){
 
-	cerr << "Used intervals: " << num_intervals << endl;
-	cerr << "Normal Edges: " << normal_edges << endl;
-	cerr << "INS Edges: " << ins_edges << endl;
-	cerr << "Source Edges: " << source_edges << endl;
-	cerr << "Sink Edges: " << sink_edges << endl;
-	cerr << "Singletons: " << singletons << endl;
+		cerr << "Used intervals: " << num_intervals << endl;
+		cerr << "Normal Edges: " << normal_edges << endl;
+		cerr << "INS Edges: " << ins_edges << endl;
+		cerr << "Source Edges: " << source_edges << endl;
+		cerr << "Sink Edges: " << sink_edges << endl;
+		cerr << "Singletons: " << singletons << endl;
 
-	cerr << "Paths: " << path_count << endl;
-	cerr << "Contigs with Paths: " << cons_with_paths << endl; 
+		cerr << "Paths: " << path_count << endl;
+		cerr << "Contigs with Paths: " << cons_with_paths << endl; 
 
-	cerr << "Short_INV1: " << short_inv1 << endl;
-	cerr << "Short_INV2: " << short_inv2 << endl;
-	cerr << "Short_INS1: " << short_ins1 << endl;
-	cerr << "Short_INS2: " << short_ins2 << endl;
-	cerr << "Short_DEL: " << short_del << endl;
-	cerr << "Short_DUP1: " << short_dup1 << endl;
-	cerr << "Short_DUP2: " << short_dup2 << endl;
-	cerr << "Short_DUP3: " << short_dup3 << endl;
-	cerr << "Short_TRANS: " << short_trans << endl;
+		cerr << "Short_INV1: " << short_inv1 << endl;
+		cerr << "Short_INV2: " << short_inv2 << endl;
+		cerr << "Short_INS1: " << short_ins1 << endl;
+		cerr << "Short_INS2: " << short_ins2 << endl;
+		cerr << "Short_DEL: " << short_del << endl;
+		cerr << "Short_DUP1: " << short_dup1 << endl;
+		cerr << "Short_DUP2: " << short_dup2 << endl;
+		cerr << "Short_DUP3: " << short_dup3 << endl;
+		cerr << "Short_TRANS: " << short_trans << endl;
 
-	cerr << "Long_INV1: " <<  long_inv1 << endl;
-	cerr << "Long_INV2: " <<  long_inv2 << endl;
-	cerr << "Long_INV3: " <<  long_inv3 << endl;
-	cerr << "Long_INS: "  <<  long_ins << endl;
-	cerr << "Long_DEL: "  <<  long_del << endl;
-	cerr << "Long_TRANS: "<<  long_trans << endl;
-	cerr << "Long_DUP: "<<  long_dup << endl;
+		cerr << "Long_INV1: " <<  long_inv1 << endl;
+		cerr << "Long_INV2: " <<  long_inv2 << endl;
+		cerr << "Long_INV3: " <<  long_inv3 << endl;
+		cerr << "Long_INS: "  <<  long_ins << endl;
+		cerr << "Long_DEL: "  <<  long_del << endl;
+		cerr << "Long_TRANS: "<<  long_trans << endl;
+		cerr << "Long_DUP: "<<  long_dup << endl;
 
-	cerr << "1bp_INV: "  <<  one_bp_inv << endl;
-	cerr << "1bp_DEL: "  <<  one_bp_del << endl;
-	cerr << "1bp_DUP: "  <<  one_bp_dup << endl;
-	cerr << "1bp_TRANS: "<<  one_bp_trans << endl;
-	cerr << "1bp_INS: " << one_bp_ins << endl;
+		cerr << "1bp_INV: "  <<  one_bp_inv << endl;
+		cerr << "1bp_DEL: "  <<  one_bp_del << endl;
+		cerr << "1bp_DUP: "  <<  one_bp_dup << endl;
+		cerr << "1bp_TRANS: "<<  one_bp_trans << endl;
+		cerr << "1bp_INS: " << one_bp_ins << endl;
 
-	cerr << "Interval_pairs: " << interval_pairs.size() << endl;
+		cerr << "Interval_pairs: " << interval_pairs.size() << endl;
 
-	cerr << "Leading: " << intc1 << endl;
-	cerr << "INS IP left: " << intc2 << endl;
-	cerr << "INS IP right: " << intc3 << endl;
-	cerr << "DEL IP: " << intc4 << endl;
-	cerr << "Mystery 1: " << mystery1 << endl;
-	cerr << "Mystery 2: " << mystery2 << endl;
-	cerr << "Mystery 3: " << mystery3 << endl;
-	cerr << "Trailing: " << intc5 << endl;
-	cerr << "INS IP right: " << intc6 << endl;
+		cerr << "Leading: " << intc1 << endl;
+		cerr << "INS IP left: " << intc2 << endl;
+		cerr << "INS IP right: " << intc3 << endl;
+		cerr << "DEL IP: " << intc4 << endl;
+		cerr << "Mystery 1: " << mystery1 << endl;
+		cerr << "Mystery 2: " << mystery2 << endl;
+		cerr << "Mystery 3: " << mystery3 << endl;
+		cerr << "Trailing: " << intc5 << endl;
+		cerr << "INS IP right: " << intc6 << endl;
 
-	cerr << "Anchor fails: " << anchor_fails << endl;
-	cerr << "Ugly Fails: " << ugly_fails << endl;
-}
-	
+		cerr << "Anchor fails: " << anchor_fails << endl;
+		cerr << "Ugly Fails: " << ugly_fails << endl;
+	}
+		
 	//find_consensus();
 	print_results(fo_vcf, out_vcf, uncertainty);
 
