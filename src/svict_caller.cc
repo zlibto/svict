@@ -1594,7 +1594,7 @@ if(PRINT_STATS)num_intervals = 0;
 
 		vector<vector<mapping_ext>> intervals(contig_len+1, vector<mapping_ext>());
 		unordered_map<int, pair<int,int>> lookup;
-		vector<mapping_ext> grouped_intervals; 
+		vector<mapping_ext> grouped_intervals; // 
 		vector<int> mapped = vector<int>(contig_len, 0); 
 		vector<bool>& Ns = all_contig_Ns[j];
 		bool visited[contig_len];
@@ -1602,10 +1602,26 @@ if(PRINT_STATS)num_intervals = 0;
 		id = 1;
 		interval_count = 1;
 
+		// ZL
+		// contig_mappings: 4D data structure/ (stand, chromosome, i_contig) -> ver<mapping> 
+		// mapping: 	
+	// 	struct mapping{
+	// 	long loc;// : 29; 
+	// 	int len;// : 14;  // up to 16,383
+	// 	int con_loc;// : 14;
+	// 	int error;
+
+	// 	bool operator<( const mapping& rhs) const{  
+	// 		return this->len == rhs.len ? this->error < rhs.error : this->len > rhs.len;
+	// 	}
+
+	// };
+
+
 		// Handle repeats, sort by length and select any interval included an unmapped contig base. 
 		for(char chr=0; chr < chromos.size(); chr++){  
 			for(rc=0; rc <= use_rc; rc++){ 
-				if(!contig_mappings[rc][chr][j].empty()){
+				if(!contig_mappings[rc][chr][j].empty()){ 
 					for(auto &interval: contig_mappings[rc][chr][j]){  
 
 						grouped_intervals.push_back(copy_interval(chr, rc, j, interval));
@@ -1615,12 +1631,28 @@ if(PRINT_STATS)num_intervals = 0;
 			}
 		}
 
+		
+		// This code: copy datga from contig_mapping to grouped_intervals
+		// group intervals: vec<mapping_ext> 		
+		// char chr;// : 5;
+		// bool rc;
+		// long loc;// : 29;
+		// int len;// : 14;
+		// int con_loc; : contig location
+		// int error;
+		// int con_id;
+		// int id;
+
+
+		// intervals: vec<vec<mapping_ext>> contig_len+1: contig
+
+
 		sort(grouped_intervals.begin(), grouped_intervals.end());
 
 		for(auto& interval : grouped_intervals){
 		
 			for(int x = ((interval.con_loc+k)-interval.len); x < (interval.con_loc+k); x++){
-				if(mapped[x] < REPEAT_LIMIT){
+				if(mapped[x] < REPEAT_LIMIT){ // = 2
 					for(int y = ((interval.con_loc+k)-interval.len); y < (interval.con_loc+k); y++){
 						mapped[y]++;
 					}
@@ -1646,10 +1678,11 @@ if(PRINT_STATS)num_intervals = 0;
 
 		}
 
-		intervals[contig_len].push_back(source);
-		intervals[contig_len].push_back(sink);
+		intervals[contig_len].push_back(source); //	mapping_ext source = {-1, 0, 0, -1, 0, 0, 0};
+		
+		intervals[contig_len].push_back(sink); // // mapping_ext sink = {-1, 0, 0, -1, 0, 0, 0};
 		lookup[0] = {contig_len,0};
-		lookup[id] = {contig_len,id};
+		lookup[id] = {contig_len,id}; // interval id -> (contig_len, id)
 
 		for(int i = 0; i < contig_len; i++){
 			for(int x = 0; x < intervals[i].size(); x++){
