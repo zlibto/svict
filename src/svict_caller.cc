@@ -1687,7 +1687,7 @@ if(PRINT_STATS)num_intervals = 0;
 		for(int i = 0; i < contig_len; i++){
 			for(int x = 0; x < intervals[i].size(); x++){
 				intervals[i][x].id = interval_count++;
-				lookup[intervals[i][x].id] = {i,x};
+				lookup[intervals[i][x].id] = {i,x}; // interval id -> {contig_loc, index among intervals at contig_loc}
 			}
 		}
 
@@ -1837,7 +1837,7 @@ if(PRINT_STATS)num_intervals = 0;
 
 								if(abs(chromo_dist) <= uncertainty || abs(contig_dist) <= uncertainty){ 
 									intc1++;
-									i1.id = all_intervals.size();
+									i1.id = all_intervals.size(); // What? can this casue problems? Maybe not because each interval is visited only once ever?
 									all_intervals.push_back(i1);
 									i2.id = all_intervals.size();
 									all_intervals.push_back(i2);
@@ -1924,9 +1924,7 @@ if(PRINT_STATS)num_intervals = 0;
 									//	results_full.push_back({{i2.id, -1, -1, i1.id}, INV});
 									short_inv1++;
 									}
-					 			}
-					 			//Positive Strand
-					 			else{ 
+					 			} else{ //Positive Strand  
 					 				//DUP
 					 				if(i1.loc+i1.len-i2.loc >= min_length && i1.loc+i1.len-i2.loc <= max_length && abs(contig_dist) <= uncertainty){
 						 				add_result(j, i1, i2, DUP, i2.chr, 0);
@@ -2047,9 +2045,9 @@ if(PRINT_STATS)num_intervals = 0;
 									all_intervals.push_back(i2);
 									sorted_intervals[i1.chr].push_back({i1.id,i1.loc});
 									sorted_intervals[i2.chr].push_back({i2.id,i2.loc});
-									interval_pairs.push_back({false,i1.id,i2.id});
-									interval_pair_ids[i1.id].push_back(pair_id);
-						 		 	interval_pair_ids[i2.id].push_back(pair_id++);
+									interval_pairs.push_back({false,i1.id,i2.id}); // note sure what this is for yet
+									interval_pair_ids[i1.id].push_back(pair_id); // can be grouped with theline above? 
+						 		 	interval_pair_ids[i2.id].push_back(pair_id++); // can be grouped
 								}
 					 		}
 
@@ -2067,14 +2065,14 @@ if(PRINT_STATS)num_intervals = 0;
 
 							if(abs(chromo_dist) <= uncertainty || abs(contig_dist) <= uncertainty){
 								intc5++;
-								i1.id = all_intervals.size();
-								all_intervals.push_back(i1);
+								i1.id = all_intervals.size(); 
+								all_intervals.push_back(i1); // this and the line above can be grouped
 								i2.id = all_intervals.size();
-								all_intervals.push_back(i2);
-								sorted_intervals[i1.chr].push_back({i1.id,i1.loc});
+								all_intervals.push_back(i2); 
+								sorted_intervals[i1.chr].push_back({i1.id,i1.loc}); // used only for fusion calling? 
 								sorted_intervals[i2.chr].push_back({i2.id,i2.loc});
 								interval_pairs.push_back({false,i1.id,i2.id});
-								interval_pair_ids[i1.id].push_back(pair_id);
+								interval_pair_ids[i1.id].push_back(pair_id); // 
 					 		 	interval_pair_ids[i2.id].push_back(pair_id++);
 							}
 						}
@@ -2712,7 +2710,7 @@ vector<pair<vector<int>, int>> svict_caller::dijkstra(const int DEPTH, int** gra
 			int w;
 			treeNode* cur_node = &sink;
 
-//if(cur_debug_id == CON_NUM_DEBUG)cerr << "t: " << t  << " size: " << min_sub_path.first.size() << " replace: " << min_sub_path.first.back().first << " with: " << min_sub_path.first.back().second << " dist: " << min_sub_path.second << endl;
+			//if(cur_debug_id == CON_NUM_DEBUG)cerr << "t: " << t  << " size: " << min_sub_path.first.size() << " replace: " << min_sub_path.first.back().first << " with: " << min_sub_path.first.back().second << " dist: " << min_sub_path.second << endl;
 
 			for(int i = 0; i < min_sub_path.first.size()+1; i++){
 				w = (i == min_sub_path.first.size()) ? s : min_sub_path.first[i].first;
@@ -2921,18 +2919,18 @@ void svict_caller::find_consensus(){
 		}
 	}
 
-	//resolve conflicts
-cerr << "Calls: " << results_consensus.size() << endl;
+		//resolve conflicts
+	cerr << "Calls: " << results_consensus.size() << endl;
 
 	for(int idc = 0; idc < results_consensus.size(); idc++){
 		result_consensus& rc = results_consensus[idc];
- if(rc.conflicts.size() > 0){
-//print_consensus(rc);
- }
+		if(rc.conflicts.size() > 0){
+		//print_consensus(rc);
+		}
 	}
 
-cerr << "Conflict Resolution"  << endl;
-cerr << "===================" << endl;
+	cerr << "Conflict Resolution"  << endl;
+	cerr << "===================" << endl;
 
 	for(int idc = 0; idc < results_consensus.size(); idc++){
 		result_consensus& rc = results_consensus[idc];
@@ -2957,10 +2955,10 @@ cerr << "===================" << endl;
 					//All TRANS
 
 					if(rc.type == TRANS){
-print_consensus(rc);
- cerr << "----------------------" << endl;
-print_consensus(results_consensus[conflict.first]);
- cerr << "===================" << endl;
+						print_consensus(rc);
+						cerr << "----------------------" << endl;
+						print_consensus(results_consensus[conflict.first]);
+						cerr << "===================" << endl;
 					}
 					else if(rc.type != INV){
 
