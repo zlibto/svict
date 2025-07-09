@@ -190,8 +190,7 @@ int extractor::dump_oea( const Record &rc, read &tmp, vector<breakpoint> &bps, d
 // input: a record and a map for all mappings.
 // output: read name along with its location 
 /****************************************************************/
-int extractor::dump_mapping( const Record &rc, read &tmp, vector<breakpoint> &bps, double clip_ratio )
-{
+int extractor::dump_mapping( const Record &rc, read &tmp, vector<breakpoint> &bps, double clip_ratio ) {
 	int flag = 0, u_flag = 0, reversed = 0, sc_loc = 0;
 	int flag2 = 0, u_flag2 = 0, reversed2 = 0, sc_loc2 = 0;
 	string seq, cigar;
@@ -299,7 +298,7 @@ int extractor::dump_mapping( const Record &rc, read &tmp, vector<breakpoint> &bp
 			int diff = (sc_loc-sc_loc2);
 
 			if(reversed == reversed2){
-dis_count1++;
+				dis_count1++;
 				//use first mate
 				if(reversed){
 					seq = reverse_complement (rc2.getSequence());
@@ -325,7 +324,7 @@ dis_count1++;
 
 			}
 			else if(diff > min_sc && reversed2){
-dis_count2++;
+				dis_count2++;
 				//use both TODO
 				seq = rc.getSequence();
 
@@ -337,7 +336,7 @@ dis_count2++;
 				tmp.seq = seq;
 			}
 			else if(diff > min_sc && reversed){
-dis_count3++;
+				dis_count3++;
 			}
 		}
 		
@@ -466,6 +465,10 @@ void extractor::extract_reads()
 	indexed_soft_clips.clear();
 	//position_coverage = vector<unsigned short>(300000000, 0);
 
+	// extract all OEA (one end anchors), soft clips, and supplementary alignments.
+	// save to read name -> Read hashmaps
+
+
 	while(1)
 	{
 		if ( parser->hasNext() )
@@ -491,9 +494,9 @@ void extractor::extract_reads()
 
 			if ( flag < 256 ) 
 			{
-				orphan_flag  = (  (flag & 0xc) == 0xc); 
-				oea_flag     = ( ((flag & 0xc) == 0x4) || ((flag & 0xc) == 0x8) );
-				chimera_flag = ( (0 == (flag & 0xc)  ) && strncmp("=", rc.getPairChromosome(), 1) );
+				orphan_flag  = (  (flag & 0xc) == 0xc);  // read unmapped, mate unmapped 
+				oea_flag     = ( ((flag & 0xc) == 0x4) || ((flag & 0xc) == 0x8) ); // read unmapped, supl
+				chimera_flag = ( (0 == (flag & 0xc)  ) && strncmp("=", rc.getPairChromosome(), 1) ); // read mapped, mate mapped, pair chromosome is "=" -> isn't this normal alignment>>
 				
 				if ( !orphan_flag )
 				{
@@ -504,15 +507,15 @@ void extractor::extract_reads()
 
 						auto it    = supply_dict.find(readname);
 						if ( it != supply_dict.end() ){
-							if ( 0x40 == (flag&0x40) ){
-								it->second.first  =  ( 0x10 == (flag&0x10)) ? reverse_complement( read_seq ) : read_seq ;
+							if ( 0x40 == (flag&0x40) ){ // first in pair
+								it->second.first  =  ( 0x10 == (flag&0x10)) ? reverse_complement( read_seq ) : read_seq ; // read reverse stand
 							}
 							else{
 								it->second.second  =  ( 0x10 == (flag&0x10)) ? reverse_complement( read_seq ) : read_seq ;
 							}
 						}
 						else{
-							if ( 0x40 == (flag&0x40) ){
+							if ( 0x40 == (flag&0x40) ){ // first in pair
 								supply_dict[readname] = { ( 0x10 == (flag&0x10)) ? reverse_complement( read_seq ) : read_seq, "" }; 
 							}
 							else{
@@ -528,7 +531,7 @@ void extractor::extract_reads()
 				if ( !orphan_flag && !chimera_flag ){				
 
 					if ( oea_flag ){
-oea_count++;
+						oea_count++;
 						dump_oea( rc, cur_read, bps, clip_ratio);
 					}
 					else{
@@ -540,7 +543,7 @@ oea_count++;
 					}
 				}	
 			}
-			else if ( ( 0x800 == (flag & 0x800) ))
+			else if ( ( 0x800 == (flag & 0x800) )) // supplementary alignment
 			{		
 				// supply_dict does not always include both mate, so we need to check to prevent including empty reads				
 				sc_loc   = rc.getLocation();
@@ -556,7 +559,7 @@ oea_count++;
 					add_read = true;
 
 					if(!supple_found){
-						cur_read.seq =  ( 0x10 == (flag&0x10)) ? reverse_complement( read_seq ) : read_seq;
+						cur_read.seq =  ( 0x10 == (flag&0x10)) ? reverse_complement( read_seq ) : read_seq; //reverse strand
 					}
 				}
 			}
@@ -624,8 +627,10 @@ extractor::cluster& extractor::get_next_cluster(int uncertainty, int min_support
 		extractor::cluster empty_cluster;
 		supple_clust.push_back(empty_cluster);
 
+		// index is what controls the loop
+
 		for(int i = indexed_soft_clips.size()-index; i < indexed_soft_clips.size(); i++){
-//if(cur_ref == "9" && i >= 5566 && i <= 6000)cerr << i << "\t" << index << "\t" << indexed_soft_clips[i].bp.sc_loc << endl;
+			//if(cur_ref == "9" && i >= 5566 && i <= 6000)cerr << i << "\t" << index << "\t" << indexed_soft_clips[i].bp.sc_loc << endl;
 			if(i != indexed_soft_clips.size()-index)index = indexed_soft_clips.size()-i; //probably don't need this.
 
 			sortable_read& sc_read = indexed_soft_clips[i];
@@ -646,8 +651,8 @@ extractor::cluster& extractor::get_next_cluster(int uncertainty, int min_support
 				both = (counts[LEFT] + counts[BOTH] + counts[RIGHT]);
 				rdel = (counts[RIGHT] + counts[DRIGHT]);
 
-//if(cur_ref == "7" && sc_read.bp.sc_loc == 55174772)	cerr << counts[DLEFT] << " " << counts[LEFT]  << " " << counts[BOTH] << " " << counts[RIGHT] << " " << counts[DRIGHT] << " for " << i << endl;  95479982
-//if(cur_ref == "8" && sc_read.bp.sc_loc >= 42147802 && sc_read.bp.sc_loc <= 42147902)	cerr << counts[DLEFT] << " " << counts[LEFT]  << " " << counts[BOTH] << " " << counts[RIGHT] << " " << counts[DRIGHT] << " for " << i << " @ " << sc_read.bp.sc_loc << endl;
+				//if(cur_ref == "7" && sc_read.bp.sc_loc == 55174772)	cerr << counts[DLEFT] << " " << counts[LEFT]  << " " << counts[BOTH] << " " << counts[RIGHT] << " " << counts[DRIGHT] << " for " << i << endl;  95479982
+				//if(cur_ref == "8" && sc_read.bp.sc_loc >= 42147802 && sc_read.bp.sc_loc <= 42147902)	cerr << counts[DLEFT] << " " << counts[LEFT]  << " " << counts[BOTH] << " " << counts[RIGHT] << " " << counts[DRIGHT] << " for " << i << " @ " << sc_read.bp.sc_loc << endl;
 
 
 				if(max(max(ldel, both), rdel) < min_support){
@@ -687,8 +692,8 @@ extractor::cluster& extractor::get_next_cluster(int uncertainty, int min_support
 				continue;
 			}
 
-//if(cur_ref == "7" && sc_read.bp.sc_loc == 55174772) 	cerr << i << " - " << index << "/" << sorted_soft_clips.size() << " ==================== "  << cur_pos << " " << c_start <<  " " << skip_pos << "  " << skip_count << " " << sc_read.seq << endl;
-//if(cur_ref == "9" && sc_read.bp.sc_loc == 95479982)cerr << i << " - " << index << "/" << sorted_soft_clips.size() << " ==================== "  << cur_pos << " " << c_start <<  " " << skip_pos << "  " << skip_count << " " << sc_read.seq << endl;
+			//if(cur_ref == "7" && sc_read.bp.sc_loc == 55174772) 	cerr << i << " - " << index << "/" << sorted_soft_clips.size() << " ==================== "  << cur_pos << " " << c_start <<  " " << skip_pos << "  " << skip_count << " " << sc_read.seq << endl;
+			//if(cur_ref == "9" && sc_read.bp.sc_loc == 95479982)cerr << i << " - " << index << "/" << sorted_soft_clips.size() << " ==================== "  << cur_pos << " " << c_start <<  " " << skip_pos << "  " << skip_count << " " << sc_read.seq << endl;
 			
 			if( !c_start ){
 				c_start = sc_read.bp.sc_loc;
@@ -698,9 +703,9 @@ extractor::cluster& extractor::get_next_cluster(int uncertainty, int min_support
 			if((!heuristic && sc_read.bp.sc_loc != c_start) || (heuristic && uncertainty <= abs(sc_read.bp.sc_loc - c_start))){
 
 				supple_clust.back().start = c_start;
-				supple_clust.back().end = c_start;
+				supple_clust.back().end = c_start; // ZL: this never used? 
 				supple_clust.back().ref = cur_ref;
-				supple_clust.back().total_coverage = 0;//position_coverage[c_start];
+				supple_clust.back().total_coverage = 0;//position_coverage[c_start]; // ZL: this is never used? 
 
 				if(!heuristic && !local_reads.empty()){
 					sortable_read cur_read = local_reads.front();
@@ -811,12 +816,12 @@ extractor::cluster& extractor::get_next_cluster(int uncertainty, int min_support
 		bool add_read;
 		read cur_read;
 
-if(PRINT_STATS && supple_clust.size() == 1){
-cerr << "Discordant (INV): " << dis_count1 << endl;
-cerr << "Discordant (DUP): " << dis_count2 << endl;
-cerr << "Discordant (INS): " << dis_count3 << endl;
-cerr << "OEA: " << oea_count << endl;
-}
+		if(PRINT_STATS && supple_clust.size() == 1){
+		cerr << "Discordant (INV): " << dis_count1 << endl;
+		cerr << "Discordant (DUP): " << dis_count2 << endl;
+		cerr << "Discordant (INS): " << dis_count3 << endl;
+		cerr << "OEA: " << oea_count << endl;
+		}
 
 		for(auto& read : supple_clust.back().sa_reads){
 

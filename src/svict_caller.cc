@@ -352,13 +352,14 @@ double elapsed_secs;
 
 	assemble(print_fastq, min_support, max_support, window_size, LOCAL_MODE, min_sc, max_fragment_size, clip_ratio, use_indel, heuristic);
 
-if(PRINT_STATS){
-end = clock();
-elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-cerr << "ASSEMBLY TIME: " << elapsed_secs << endl;
-cerr << endl;
-begin = clock();
-}
+	if(PRINT_STATS){
+		end = clock();
+		elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+		cerr << "ASSEMBLY TIME: " << elapsed_secs << endl;
+		cerr << endl;
+		begin = clock();
+	}
+
 	if(print_fastq != ""){
 		cerr << "done" << endl;
 		cerr << "Please map the contigs with your mapper of choice and resume SViCT." << endl;
@@ -367,41 +368,42 @@ begin = clock();
 
 	probalistic_filter();
 
-if(PRINT_STATS){
-end = clock();
-elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-cerr << "PROBABILISTIC FILTER TIME: " << elapsed_secs << endl;
-cerr << endl;
-begin = clock();
-}
+	if(PRINT_STATS){
+		end = clock();
+		elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+		cerr << "PROBABILISTIC FILTER TIME: " << elapsed_secs << endl;
+		cerr << endl;
+		begin = clock();
+	}
 
 	index();
 
-if(PRINT_STATS){
-end = clock();
-elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-cerr << "INDEX TIME: " << elapsed_secs << endl;
-cerr << endl;
-begin = clock();
-}
+	if(PRINT_STATS){
+		end = clock();
+		elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+		cerr << "INDEX TIME: " << elapsed_secs << endl;
+		cerr << endl;
+		begin = clock();
+	}
 
 	generate_intervals(out_vcf, LOCAL_MODE);
 
-if(PRINT_STATS){
-end = clock();
-elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-cerr << "MAPPING TIME: " << elapsed_secs << endl;
-cerr << endl;
-begin = clock();
-}
+	if(PRINT_STATS){
+		end = clock();
+		elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+		cerr << "MAPPING TIME: " << elapsed_secs << endl;
+		cerr << endl;
+		begin = clock();
+	}
+	
 	predict_variants(out_vcf, uncertainty, min_length, max_length, sub_optimal);
 
-if(PRINT_STATS){
-end = clock();
-elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-cerr << "CALLING TIME: " << elapsed_secs << endl;
-cerr << endl;
-}
+	if(PRINT_STATS){
+		end = clock();
+		elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+		cerr << "CALLING TIME: " << elapsed_secs << endl;
+		cerr << endl;
+	}
 
 }
 
@@ -452,33 +454,33 @@ void svict_caller::assemble(string print_fastq, int min_support, int max_support
 	string cur_ref;
 	if(print_fastq != "")writer = fopen(print_fastq.c_str(), "wb");
 
-clock_t begin;
-clock_t end;
-double elapsed_secs;
+	clock_t begin;
+	clock_t end;
+	double elapsed_secs;
 
-//########### Read TP ##############
-// FILE *writer = fopen("all.contigs.reads", "wb");
+	//########### Read TP ##############
+	// FILE *writer = fopen("all.contigs.reads", "wb");
 
-// for(int i = 0; i < 14000; i++){
-// 	TP[i] = false;
-// }
+	// for(int i = 0; i < 14000; i++){
+	// 	TP[i] = false;
+	// }
 
-// string line;
-// ifstream myfile ("TP.contigs");
+	// string line;
+	// ifstream myfile ("TP.contigs");
 
-// if (myfile.is_open()) {
-// 	while ( getline (myfile, line) ) { 
-// 	  TP[stoi(line)] = true; 
-// 	}
-// 	myfile.close();
-// }
+	// if (myfile.is_open()) {
+	// 	while ( getline (myfile, line) ) { 
+	// 	  TP[stoi(line)] = true; 
+	// 	}
+	// 	myfile.close();
+	// }
 
-//STATS
-double part_count = 0;
-double contig_count1 = 0;
-double contig_count2 = 0;
-double support_count = 0;
-int read_count = 0;
+	//STATS
+	double part_count = 0;
+	double contig_count1 = 0;
+	double contig_count2 = 0;
+	double support_count = 0;
+	int read_count = 0;
 
 	// If local mode enabled, use regions around contigs. Otherwise, add all chromosomes as regions
 	if(!LOCAL_MODE){  
@@ -517,6 +519,14 @@ int read_count = 0;
 
 		if(clusters.size() > 1){
 			set_cover(clusters);
+			// ZL: wtf
+			// my guess that this is what it does: https://pmc.ncbi.nlm.nih.gov/articles/PMC5870608/
+			// There might be still some reads which map to multiple novel insertions. We assign each such read to the insertion with the highest support via set-cover algorithm, where the set of reads represents the universe, and where clusters represent the sets. By selecting the minimal number of sets which describe all of the available reads, we eliminate low-support insertions and ensure that each read belongs to only one insertion event. Because the set cover is an NP-hard problem, we use a fast greedy strategy to calculate the minimal set of events that covers all reads (Johnson, 1974).
+			// claude: 
+			// Purpose
+			// This function implements a set cover algorithm to select a minimal subset of clusters that collectively cover all the reads. It's used to remove redundant clusters that contain overlapping reads.
+
+
 		}
 
 		for(auto& p : clusters){
@@ -531,29 +541,33 @@ int read_count = 0;
 			//Assemble contigs
 			contigs = as.assemble(p.reads);
 
-	//STATS
-	if(PRINT_STATS){
-		read_count += p.reads.size();
-		part_count++;
-		contig_count1 += contigs.size(); 	
-	}	
+			//STATS
+			if(PRINT_STATS){
+				read_count += p.reads.size();
+				part_count++;
+				contig_count1 += contigs.size(); 	
+			}	
 
 			for (auto &contig: contigs){ 
 				//TODO why are these long contigs happening? TP is in 6000bp contig :(
-				if (contig.support() >= min_support && contig.support() <= max_support && contig.data.size() <= MAX_ASSEMBLY_RANGE*2 ){// && contig.data.size() <= (4*301)) { //Conservative threshold based on 4 times the longest read length of current short read sequencing technologies
+				if (contig.support() >= min_support && contig.support() <= max_support && contig.data.size() <= MAX_ASSEMBLY_RANGE*2 ){
+					// && contig.data.size() <= (4*301)) { //Conservative threshold based on 4 times the longest read length of current short read sequencing technologies
 
-					if(print_fastq != "")dump_contig(writer, contig, (int)cluster_info.size(), contig.support(), p.start, (find(chromos.begin(), chromos.end(), p.ref) - chromos.begin()));
+					if(print_fastq != "") {
+						dump_contig(writer, contig, (int)cluster_info.size(), contig.support(), p.start, (find(chromos.begin(), chromos.end(), p.ref) - chromos.begin()));
+					}
 
-	//STATS
-	if(PRINT_STATS){
-		contig_count2++; 
-		support_count += contig.support();	
+					//STATS
+					if(PRINT_STATS){
+						contig_count2++; 
+						support_count += contig.support();	
 
-		if(p.start >= -42147802 && p.start <= -42147902  ){
-			cerr << "support: " << contig.support() << " " << contig.data.length() << " " << p.start << " " << cluster_info.size() << " " << p.ref << endl;
-			cerr << contig.data << endl;
-		}
-	}
+						if(p.start >= -42147802 && p.start <= -42147902  ){
+							cerr << "support: " << contig.support() << " " << contig.data.length() << " " << p.start << " " << cluster_info.size() << " " << p.ref << endl;
+							cerr << contig.data << endl;
+						}
+					}
+
 					//if(LOCAL_MODE)regions.push_back({contig.cluster_chr, {(pt.get_start()-ref_flank), (pt.get_end()+ref_flank)}});
 					
 					// =================== Probablistic Filter =====================
@@ -581,14 +595,14 @@ int read_count = 0;
 					// ==================================================================
 
 
-	//########### Write Contigs with TP ##############
-	//cout << cluster_info.size() << "\t" << contig.support() << "\t" << max_dist << "\t" << TP[cluster_info.size()] << "\tchr" << p.ref << "\t" << p.start << endl;
+					//########### Write Contigs with TP ##############
+					//cout << cluster_info.size() << "\t" << contig.support() << "\t" << max_dist << "\t" << TP[cluster_info.size()] << "\tchr" << p.ref << "\t" << p.start << endl;
 
-	//########### Write Clusters ##############
-	// fprintf(writer, ">Cluster: %d Contig: %d MaxSupport: %d TP: %d Reads: \n", p.start, cluster_info.size(), contig.support(), TP[cluster_info.size()]); //TODO find way to get start loc in contig
-	// fprintf(writer, "ContigSeq: %s\n", contig.data.c_str());
-	// for (auto &read: contig.read_information)
-	// 	fprintf(writer, "+ %d %d %s %s\n", read.location_in_contig, read.seq.size(), read.name.c_str(), read.seq.c_str());
+					//########### Write Clusters ##############
+					// fprintf(writer, ">Cluster: %d Contig: %d MaxSupport: %d TP: %d Reads: \n", p.start, cluster_info.size(), contig.support(), TP[cluster_info.size()]); //TODO find way to get start loc in contig
+					// fprintf(writer, "ContigSeq: %s\n", contig.data.c_str());
+					// for (auto &read: contig.read_information)
+					// 	fprintf(writer, "+ %d %d %s %s\n", read.location_in_contig, read.seq.size(), read.name.c_str(), read.seq.c_str());
 
 					cluster_info.push_back({ p.start, p.total_coverage, static_cast<char>(find(chromos.begin(), chromos.end(), p.ref) - chromos.begin()) });
 
@@ -612,7 +626,7 @@ int read_count = 0;
 			}
 			vector<contig>().swap(contigs);
 		}//clusters
-		vector<extractor::cluster>().swap(clusters);
+		vector<extractor::cluster>().swap(clusters); // clear clusters vector
 	}
 
 	if(all_contigs.empty() && all_compressed_contigs.empty()){
@@ -622,18 +636,18 @@ int read_count = 0;
 
 	rate_param = 1/(sum/count);
 
-	if(print_fastq != "")fclose(writer);
+	if(print_fastq != "") {fclose(writer);}
 
-if(PRINT_STATS){
-	cerr << "Read Count: " << read_count << endl;
-	cerr << "Partition Count: " << part_count << endl;
-	cerr << "Total Contigs: " << contig_count1 << endl;
-	cerr << "Contigs: " << all_contigs.size() << " " << all_compressed_contigs.size() << endl;
-	cerr << "Average Num Contigs Pre-Filter: " << (contig_count1/part_count) << endl;
-	cerr << "Average Num Contigs Post-Filter: " << (contig_count2/part_count) << endl;
-	cerr << "Average Contig Support: " << (support_count/contig_count2) << endl;
-	cerr << "Rate Parameter Estimate: " << rate_param << endl;
-}
+	if(PRINT_STATS){
+		cerr << "Read Count: " << read_count << endl;
+		cerr << "Partition Count: " << part_count << endl;
+		cerr << "Total Contigs: " << contig_count1 << endl;
+		cerr << "Contigs: " << all_contigs.size() << " " << all_compressed_contigs.size() << endl;
+		cerr << "Average Num Contigs Pre-Filter: " << (contig_count1/part_count) << endl;
+		cerr << "Average Num Contigs Post-Filter: " << (contig_count2/part_count) << endl;
+		cerr << "Average Contig Support: " << (support_count/contig_count2) << endl;
+		cerr << "Rate Parameter Estimate: " << rate_param << endl;
+	}
 }
 
 vector<int> svict_caller::set_cover(vector<extractor::cluster>& clusters){
@@ -726,9 +740,9 @@ void svict_caller::probalistic_filter(){
 		}
 	}
 
-if(PRINT_STATS){
-	cerr << "Filtered " << num_filtered << " contigs." << endl;
-}
+	if(PRINT_STATS){
+		cerr << "Filtered " << num_filtered << " contigs." << endl;
+	}
 
 }
 
@@ -2160,25 +2174,28 @@ if(PRINT_STATS)num_intervals = 0;
 		last_w_loc = 0;
 		next_w_loc = 0;
 
-		for(z=0; z < sorted_intervals[chr].size()-1; z++){  
+		for(z=0; z < sorted_intervals[chr].size()-1; z++){    // z: rank 
 
-			z_id = sorted_intervals[chr][z].id;
+			z_id = sorted_intervals[chr][z].id;   // z interval id
 			found = false;
  
 			if(!interval_pair_ids[z_id].empty()){
 
-				w = (z-1 > 0) ? z-1 : 0;
-				mapping_ext iz = all_intervals[z_id];
+				w = (z-1 > 0) ? z-1 : 0;  // w rank 
+				mapping_ext iz = all_intervals[z_id];  // z interval 
 				mapping_ext ix, iy, iw;
 				next_w_loc = all_intervals[sorted_intervals[chr][w].id].rc ? sorted_intervals[chr][w].loc : sorted_intervals[chr][w].loc + all_intervals[sorted_intervals[chr][w].id].len;
 
+				// sorted_intervals[chr][w].id and w_id are the same thing
+				// sorted_intervals[chr][w] and all_intervals[w_id] are the same thing 
+
 				while(w >= 0 && next_w_loc >= last_w_loc  && abs(iz.loc - sorted_intervals[chr][w].loc) < max_length){
 
-					w_id = sorted_intervals[chr][w].id;
+					w_id = sorted_intervals[chr][w].id;  // previous interval id 
 
 					if(!interval_pair_ids[w_id].empty()){
 
-						iw = all_intervals[w_id];
+						iw = all_intervals[w_id];  // w interval 
 
 						chromo_dist = (iz.rc && iw.rc) ? iw.loc-(iz.loc+iz.len) : iz.loc-(iw.loc+iw.len);
 
