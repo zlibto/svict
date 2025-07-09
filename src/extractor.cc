@@ -854,3 +854,9 @@ void extractor::clear_maps(){
 	map_orphan.clear();
 
 }
+
+
+/// For a list of cluster covering multiple reads, 
+struct ClusterResolver {
+   // equivalent 
+}

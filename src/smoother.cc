@@ -12,6 +12,9 @@ smoother::~smoother(void){
 
 void smoother::set_cover(vector<smoother::cluster>& clusters, vector<smoother::Xread>& reads, unordered_map<string, int>& read_to_id) 
 {
+
+	// ZL
+	// greedy algorithm
 	FiboHeap<cluster*> heap;
 	unordered_map<int, FiboNode<cluster*>* > heap_handles;
 

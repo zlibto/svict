@@ -661,7 +661,7 @@ vector<int> svict_caller::set_cover(vector<extractor::cluster>& clusters){
 
 	for (auto& c : clusters) {
 
-		int id = cover_clusters.size();
+		int id = cover_clusters.size(); // current cover_cluster
 		cover_clusters.push_back({id, c.start, 0, 0, vector<int>()});
 
 		for(auto& read : c.reads){
@@ -674,7 +674,7 @@ vector<int> svict_caller::set_cover(vector<extractor::cluster>& clusters){
 				rid = f->second;
 			}
 			reads[rid].clusters.push_back(id);
-			cover_clusters[id].reads.push_back(rid);
+			cover_clusters[id].reads.push_back(rid); // add a 
 		}
 	}
 
