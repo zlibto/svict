@@ -1050,23 +1050,23 @@ void svict_caller::generate_intervals(const string &out_vcf, const bool LOCAL_MO
 	//fprintf(fo_vcf, "##fileformat=VCFv4.2\n##source=SVICT-v1.0\n");
 	fprintf(fo_vcf, "##fileformat=VCFv4.2\n##source=SVICT-v%s\n", versionNumber);
 
-//STATS
-int anchor_intervals = 0;
-int non_anchor_intervals = 0;
-int pop_back1 = 0;
-int pop_back2 = 0;
-int pop_back3 = 0;
-int pop_back4 = 0;
-int max_ints = 0;
-int max_int_len = 0;
-int max_con_len = 0;
-int max_starts = 0;
-int max_sub = 0;
-int index_misses = 0;
-long kmer_hits = 0;
-long kmer_hits_con = 0;
-double interval_count = 0;
-int corrected_bp = 0;
+	//STATS
+	int anchor_intervals = 0;
+	int non_anchor_intervals = 0;
+	int pop_back1 = 0;
+	int pop_back2 = 0;
+	int pop_back3 = 0;
+	int pop_back4 = 0;
+	int max_ints = 0;
+	int max_int_len = 0;
+	int max_con_len = 0;
+	int max_starts = 0;
+	int max_sub = 0;
+	int index_misses = 0;
+	long kmer_hits = 0;
+	long kmer_hits_con = 0;
+	double interval_count = 0;
+	int corrected_bp = 0;
 
 	// Initialization 
 	if(PRINT_READS){
@@ -1186,14 +1186,14 @@ int corrected_bp = 0;
 					cur_index = index;
 				}
 
-//kmer_hits++;
-//contig_kmer_counts[contig_kmers_index[cur_index]]++; //178956970
+	//kmer_hits++;
+	//contig_kmer_counts[contig_kmers_index[cur_index]]++; //178956970
 
 				for(const int& j : contig_kmers[contig_kmers_index[cur_index]]){
 
 					// Local mode temporarily disabled
 					//if( (!LOCAL_MODE || j == jj)){ 
-//kmer_hits_con++;
+		//kmer_hits_con++;
 						last_interval& l_interval = last_intervals[rc][chromo][j];
 						iend = l_interval.loc + l_interval.len;
 
@@ -1696,12 +1696,15 @@ if(PRINT_STATS)num_intervals = 0;
 		
 		intervals[contig_len].push_back(sink); // // mapping_ext sink = {-1, 0, 0, -1, 0, 0, 0};
 		lookup[0] = {contig_len,0};
-		lookup[id] = {contig_len,id}; // interval id -> (contig_len, id)
-
+		lookup[id] = {contig_len,id}; 
 		for(int i = 0; i < contig_len; i++){
 			for(int x = 0; x < intervals[i].size(); x++){
 				intervals[i][x].id = interval_count++;
+<<<<<<< HEAD
 				lookup[intervals[i][x].id] = {i,x}; // interval id -> {contig_loc, index among intervals at contig_loc}
+=======
+				lookup[intervals[i][x].id] = {i,x}; // lookup: interval id -> {contig_loc, index in intervals at contig_loc}
+>>>>>>> 8597df6 (save)
 			}
 		}
 
@@ -1823,10 +1826,15 @@ if(PRINT_STATS)num_intervals = 0;
 				bool is_anchor;
 				bool anchor_found = false;
 
-				for(int i = path.size()-2; i > 0; i--){
+				
+
+				for(int i = path.size()-2; i > 0; i--){ // iterate from upstream
 
 					// Check if anchor (located near partition range)
-					cur_i = intervals[lookup[path[i]].first][lookup[path[i]].second];
+
+					// lookup: node id -> (contig_location, index on the contig location intervals )
+					// intervals: contig location -> list of intervals
+					cur_i = intervals[lookup[path[i]].first][lookup[path[i]].second]; // interval of node i! bruh
 
 					is_anchor = ((cur_i.chr == contig_chr) && (abs(cur_i.loc+(cur_i.len/2) - contig_loc) < (MAX_ASSEMBLY_RANGE*2)));
 					found = false;
@@ -1839,13 +1847,13 @@ if(PRINT_STATS)num_intervals = 0;
 					if(a1 == -1){
 						if(is_anchor){
 
-							a1 = i;
+							a1 = i; 
 
 							//leading non-anchor region
-							if(a1 != path.size()-2){
+							if(a1 != path.size()-2){ // non-singleton. Start building the traversal list. 
 								
-				 				i1 = intervals[lookup[path[a1+1]].first][lookup[path[a1+1]].second];
-				 				i2 = intervals[lookup[path[a1]].first][lookup[path[a1]].second];
+				 				i1 = intervals[lookup[path[a1+1]].first][lookup[path[a1+1]].second]; // upstream  interval ()
+				 				i2 = intervals[lookup[path[a1]].first][lookup[path[a1]].second]; // downstream interval ( node)
 				 				chromo_dist = (i1.rc && i2.rc) ? i1.loc-(i2.loc+i2.len) : i2.loc-(i1.loc+i1.len);
 				 				contig_dist = (i2.con_loc-i2.len)-i1.con_loc;
 
@@ -1855,18 +1863,18 @@ if(PRINT_STATS)num_intervals = 0;
 									all_intervals.push_back(i1);
 									i2.id = all_intervals.size();
 									all_intervals.push_back(i2);
-									sorted_intervals[i1.chr].push_back({i1.id,i1.loc});
-									sorted_intervals[i2.chr].push_back({i2.id,i2.loc});
-									interval_pairs.push_back({false,i1.id,i2.id});
-									interval_pair_ids[i1.id].push_back(pair_id);
-						 		 	interval_pair_ids[i2.id].push_back(pair_id++);
+									sorted_intervals[i1.chr].push_back({i1.id,i1.loc}); // sorted list for traversal
+									sorted_intervals[i2.chr].push_back({i2.id,i2.loc}); // sorted list for traversal
+									interval_pairs.push_back({false,i1.id,i2.id}); // Pairs of intervals
+									interval_pair_ids[i1.id].push_back(pair_id); // Mapping from interval -> interval_pairs
+						 		 	interval_pair_ids[i2.id].push_back(pair_id++); // Mapping from interval -> interval_pairs
 								}
 							}
 							else{
 
-								i1 = intervals[lookup[path[a1]].first][lookup[path[a1]].second];
+								i1 = intervals[lookup[path[a1]].first][lookup[path[a1]].second]; // upstream non-source interval
 
-								if(i1.con_loc+k-i1.len > ((int)contig_len - (i1.con_loc+k)) || a1 != 1){
+								if(i1.con_loc+k-i1.len > ((int)contig_len - (i1.con_loc+k)) || a1 != 1){ 
 									//Insertion, Left Side
 									if(i1.con_loc+k-i1.len > ANCHOR_SIZE && !i1.rc){
 										intc2++;	
@@ -1879,7 +1887,7 @@ if(PRINT_STATS)num_intervals = 0;
 								}
 								else{
 									//Insertion, Right Side, singleton case
-									if(((int)contig_len - (i1.con_loc+k)) > ANCHOR_SIZE && !i1.rc){
+									if(((int)contig_len - (i1.con_loc+k)) > ANCHOR_SIZE && !i1.rc){ // right gap on the contig is larger than left gap, and i==1 (one interval on the contigs)
 										intc3++;
 										i1.id = all_intervals.size();
 										all_intervals.push_back(i1);

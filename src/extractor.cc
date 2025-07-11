@@ -582,11 +582,11 @@ void extractor::extract_reads()
 				}
 
 				if(strncmp(ref, rc.getChromosome(), 50 )){
-					start = 0;
+					start = 0; // this is the start of the first read in the chromosome
 					num_read = 0;
 					if(!sorted_soft_clips.empty()){
 						index = sorted_soft_clips.size();
-						indexed_soft_clips.reserve(index);
+						indexed_soft_clips.reserve(index); // this is just 
 						for(const sortable_read& read : sorted_soft_clips){
 							indexed_soft_clips.push_back(read);
 						}
@@ -635,7 +635,7 @@ extractor::cluster& extractor::get_next_cluster(int uncertainty, int min_support
 
 			sortable_read& sc_read = indexed_soft_clips[i];
 
-			if(cur_pos != sc_read.bp.sc_loc){
+			if(cur_pos != sc_read.bp.sc_loc){ // a new soft clip location. Find reads with the same position, decide type.
 
 				vector<int> counts = vector<int>(5,0);
 				counts[sc_read.bp.pos] = 1;
@@ -699,6 +699,7 @@ extractor::cluster& extractor::get_next_cluster(int uncertainty, int min_support
 				c_start = sc_read.bp.sc_loc;
 				c_type = cur_type;
 			}
+			// start processing the reads with the same bp soft_clip location.
 
 			if((!heuristic && sc_read.bp.sc_loc != c_start) || (heuristic && uncertainty <= abs(sc_read.bp.sc_loc - c_start))){
 
@@ -717,7 +718,7 @@ extractor::cluster& extractor::get_next_cluster(int uncertainty, int min_support
 					}
 
 					if(!local_reads.empty()){
-						for(auto& local_read : local_reads){
+						for(auto& local_read : local_reads){ //local_read: sortableread
 
 							if((c_start - local_read.bp.sc_loc) == 0)break;
 
@@ -811,16 +812,17 @@ extractor::cluster& extractor::get_next_cluster(int uncertainty, int min_support
 
 		return get_next_cluster(uncertainty, min_support, heuristic); 
 	}	
-	else{
-
+	else{ 
+        // end of all clusters.
+		// Grouped all relevant reads to a cluster. Now process sa_reads.
 		bool add_read;
 		read cur_read;
 
 		if(PRINT_STATS && supple_clust.size() == 1){
-		cerr << "Discordant (INV): " << dis_count1 << endl;
-		cerr << "Discordant (DUP): " << dis_count2 << endl;
-		cerr << "Discordant (INS): " << dis_count3 << endl;
-		cerr << "OEA: " << oea_count << endl;
+			cerr << "Discordant (INV): " << dis_count1 << endl;
+			cerr << "Discordant (DUP): " << dis_count2 << endl;
+			cerr << "Discordant (INS): " << dis_count3 << endl;
+			cerr << "OEA: " << oea_count << endl;
 		}
 
 		for(auto& read : supple_clust.back().sa_reads){
